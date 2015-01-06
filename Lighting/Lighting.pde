@@ -29,7 +29,8 @@ float shininess = 0.90,
       transmitMin = 0.20,
       transmitMax = 0.80,
       wax = 1.5,
-      lx, ly, lz,
+      lx, ly, lz,        // light position
+      fx, fy, fz,        // light falloff
       aI  = 0.10,        // light intensities
       dI  = 0.50,
       sI  = 0.40;
@@ -41,7 +42,7 @@ ColorPicker bgCp;
 void setup() 
 {
   size(1040, 600, P3D);
-  light(300, -height, 200);
+  light(300, -height, 200, 0.0025, 0.002, 0.0);
   frameRate(60);
   noStroke();
   background(bgc);
@@ -53,11 +54,13 @@ void setup()
   setupControls(cp5);
   
   // Models
-  modelScales = new float[4];
+  modelScales = new float[6];
   addModel("Cow", 50);
   addModel("Suzanne", 140);
   addModel("Bunny", 100);
   addModel("Model1", 0.7);
+  addModel("Model2", 0.7);
+  addModel("Model3", 0.7);
   
   loadModel("Cow", 50);       // Default model
   
@@ -80,8 +83,9 @@ void draw()
   fill(250,250,250); // Default fill
   lightSpecular(235,240,255);
   shininess(shininess);
-  lightFalloff(0.0025, 0.002, 0.0);
+  lightFalloff(fx, fy, fz);
   pointLight(255, 255, 255, lx, ly, lz);
+
   
   // Shader uniforms
   lit.set("AmbientIntensity", aI);
@@ -132,11 +136,14 @@ void loadModel(String name, float scale)
   //model.disableMaterial();
 }
 
-void light(int x, int y, int z)
+void light(float x, float y, float z, float fx, float fy, float fz)
 {
   lx = x;
   ly = y;
   lz = z;
+  this.fx = fx;
+  this.fy = fy;
+  this.fz = fz;
 }
 
 //
@@ -225,13 +232,17 @@ void setupControls(ControlP5 cp5)
                 .setPosition(10, 133);
   dlShaders = cp5.addDropdownList("Shaders")
                  .setPosition(120, 133);
-                 
-  e("lx", -width, width, 10, height-85);
-  e("ly", -height, height, 120, height-85);
-  e("lz", -height, height, 230, height-85);
+  
+  e("fx", 0.0, 1.0, 10, height-45);
+  e("fy", 0.0, 1.0, 120, height-45);
+  e("fz", 0.0, 1.0, 230, height-45);
+  
+  e("lx", -width, width, 10, height-20);
+  e("ly", -height, height, 120, height-20);
+  e("lz", -height, height, 230, height-20);
   
   bgCp = cp5.addColorPicker("bgpicker")
-          .setPosition(10, height-70)
+          .setPosition(10, height-120)
           .setColorValue(bgc);
 }
 
