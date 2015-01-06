@@ -86,7 +86,6 @@ void draw()
   lightFalloff(fx, fy, fz);
   spotLight(255, 255, 255, lx, ly, lz, -1, 0, 0, PI/2, 600);
 
-  
   // Shader uniforms
   lit.set("AmbientIntensity", aI);
   lit.set("DiffuseIntensity", dI);
