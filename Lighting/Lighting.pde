@@ -84,7 +84,7 @@ void draw()
   lightSpecular(235,240,255);
   shininess(shininess);
   lightFalloff(fx, fy, fz);
-  pointLight(255, 255, 255, lx, ly, lz);
+  spotLight(255, 255, 255, lx, ly, lz, -1, 0, 0, PI/2, 600);
 
   
   // Shader uniforms
