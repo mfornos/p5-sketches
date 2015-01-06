@@ -21,6 +21,8 @@ varying vec3 N;
 varying vec3 P;
 varying vec3 V;
 varying vec3 L;
+varying float spotf;
+varying float falloff;
 
 vec3 Uncharted2Tonemap(vec3 x)
 {
@@ -81,9 +83,9 @@ void main()
   vec3 l = normalize(L);
   vec3 n = normalize(N);
   vec3 v = normalize(V);
-  vec3 h = normalize(l+v);
+  // vec3 h = normalize(l+v);
 
-  float diffuse = dot(l,n);
+  float diffuse = max(.0, dot(l,n));
 
   // Irradiance
   vec3 irrad = vec3( 
@@ -91,15 +93,17 @@ void main()
      albedo * irradmat(gracegreen, n),
      albedo * irradmat(graceblue, n));
 
-  gl_FragColor = vec4((AmbientColour*AmbientIntensity + 
-                      DiffuseColour*diffuse*DiffuseIntensity +
-                      SpecularColour*beckmannSpecular(l,v,n,Roughness)*SpecularIntensity) * 0.5 +
+  gl_FragColor = vec4((AmbientColour * falloff * AmbientIntensity + 
+                      DiffuseColour * spotf * falloff * diffuse*DiffuseIntensity +
+                      SpecularColour * spotf * falloff 
+                      * beckmannSpecular(l,v,n,Roughness)*SpecularIntensity) * 0.5 +
                       smoothstep(.0, 1.5, irrad * 50. * diffuse),
                   1);
 
   // Tone Mapping
   gl_FragColor.rgb = Uncharted2Tonemap(gl_FragColor.rgb * Exposure) 
                      / Uncharted2Tonemap(vec3(1));
-
+  // Gamma correction
+  gl_FragColor.rgb = pow(gl_FragColor.rgb, vec3(1.0 / 2.2));
 }
 

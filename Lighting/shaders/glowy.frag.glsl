@@ -22,6 +22,8 @@ varying vec3 N;
 varying vec3 P;
 varying vec3 V;
 varying vec3 L;
+varying float spotf;
+varying float falloff;
 
 const float Sharpness = 0.5;
 
@@ -94,15 +96,17 @@ void main()
   vec3 l = normalize(L);
   vec3 n = normalize(N);
   vec3 v = normalize(V);
-  vec3 h = normalize(l+v);
+  // vec3 h = normalize(l+v);
 
-  vec3 ambient = AmbientColour * TRANS_COLOR * AmbientIntensity;
+  vec3 ambient = AmbientColour * falloff * TRANS_COLOR * AmbientIntensity;
 
   vec3 diffuse = (LIGHT_COLOR * DiffuseColour
+                           * spotf * falloff
                            * (Waxiness + (1. - Waxiness)
                            * max(0., dot(n, l))) * DiffuseIntensity);
 
   vec3 specular = LIGHT_COLOR 
+                            * spotf * falloff
                             * SpecularColour
                             * cookTorranceSpecular(l, v, n, Roughness, Fresnel) 
                             * SpecularIntensity;
@@ -115,12 +119,6 @@ void main()
   gl_FragColor.rgb += rim * diffuse;
   gl_FragColor *= vec4(ambient + diffuse + specular, rim);
   gl_FragColor += vec4(diffuse + specular, 1);
-
-  // Depth cue
-  float dd = gl_DepthRange.far - gl_DepthRange.near;
-  float scDepth = (2.0 * gl_FragCoord.z - dd) / (dd * gl_FragCoord.w * (Resolution.y * .5));
-  float s = min(1. / scDepth, 1.);
-  gl_FragColor.rgb = s * gl_FragColor.rgb + (1.-s) * vec3(0.02);
 
   // Tone mapping
   gl_FragColor.rgb = Uncharted2Tonemap(gl_FragColor.rgb * Exposure) / Uncharted2Tonemap(vec3(1));

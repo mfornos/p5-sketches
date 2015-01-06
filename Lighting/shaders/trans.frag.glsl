@@ -23,6 +23,8 @@ varying vec3 N;
 varying vec3 P;
 varying vec3 V;
 varying vec3 L;
+varying float spotf;
+varying float falloff;
 
 const float Thinness = 3.;
 
@@ -93,16 +95,16 @@ void main()
   vec3 l = normalize(L);
   vec3 n = normalize(N);
   vec3 v = normalize(V);
-  vec3 h = normalize(l+v);
+  // vec3 h = normalize(l+v);
   vec3 p = normalize(P);
 
-  float diffuse = dot(l,n);
+  float diffuse = max(0., dot(l,n));
 
   float specular = cookTorranceSpecular(l, v, n, Roughness, Fresnel);
    
-  gl_FragColor = vec4(AmbientColour * AmbientIntensity +
-                      DiffuseColour * diffuse * DiffuseIntensity +
-                      SpecularColour * specular * SpecularIntensity, 1);
+  gl_FragColor = vec4(AmbientColour * falloff * AmbientIntensity +
+                      DiffuseColour * spotf * falloff * diffuse * DiffuseIntensity +
+                      SpecularColour * spotf * falloff * specular * SpecularIntensity, 1);
 
   float t1 = max(TransmitMax + (TransmitMin - TransmitMax) * (1. - pow(1. - n.z, Thinness)), 0.);
   vec3 r = reflect(V, n);

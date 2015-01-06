@@ -29,6 +29,7 @@ float shininess = 0.90,
       transmitMin = 0.20,
       transmitMax = 0.80,
       wax = 1.5,
+      lx, ly, lz,
       aI  = 0.10,        // light intensities
       dI  = 0.50,
       sI  = 0.40;
@@ -40,6 +41,7 @@ ColorPicker bgCp;
 void setup() 
 {
   size(1040, 600, P3D);
+  light(300, -height, 200);
   frameRate(60);
   noStroke();
   background(bgc);
@@ -75,11 +77,11 @@ void setup()
 void draw() 
 {
   background(bgc);
-  ambientLight(bgc >> 16 & 0xFF, bgc >> 8 & 0xFF, bgc & 0xFF);
+  fill(250,250,250); // Default fill
   lightSpecular(235,240,255);
   shininess(shininess);
-  pointLight(255, 255, 255, width/2, height, 200);
-  fill(250,250,250); // Default fill
+  lightFalloff(0.0025, 0.002, 0.0);
+  pointLight(255, 255, 255, lx, ly, lz);
   
   // Shader uniforms
   lit.set("AmbientIntensity", aI);
@@ -128,6 +130,13 @@ void loadModel(String name, float scale)
   model.translateToCenter();
   model.disableTexture();
   //model.disableMaterial();
+}
+
+void light(int x, int y, int z)
+{
+  lx = x;
+  ly = y;
+  lz = z;
 }
 
 //
@@ -209,17 +218,21 @@ void setupControls(ControlP5 cp5)
   cp5.addToggle("sphere")
      .setPosition(10,140)
      .setSize(10, 10);
-  
-  bgCp = cp5.addColorPicker("bgpicker")
-          .setPosition(10, height-70)
-          .setColorValue(bgc);
-   
+ 
   cp5.addTextlabel("palette", "PALETTE", 6, 110);
    
   dlModels = cp5.addDropdownList("Models")
                 .setPosition(10, 133);
   dlShaders = cp5.addDropdownList("Shaders")
                  .setPosition(120, 133);
+                 
+  e("lx", -width, width, 10, height-85);
+  e("ly", -height, height, 120, height-85);
+  e("lz", -height, height, 230, height-85);
+  
+  bgCp = cp5.addColorPicker("bgpicker")
+          .setPosition(10, height-70)
+          .setColorValue(bgc);
 }
 
 void e(String name, float rx, float ry, float x, float y) 
