@@ -27,7 +27,7 @@ float shininess = 0.90,
       fresnel = 0.08,
       exposure = 1.0,
       transmitMin = 0.0,
-      transmitMax = 0.7,
+      transmitMax = 0.07,
       wax = 1.5,
       lx, ly, lz,        // light position
       fx, fy, fz,        // light falloff
