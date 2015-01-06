@@ -140,7 +140,7 @@ void gui()
   hint(DISABLE_DEPTH_TEST);
   cam.beginHUD();
   fill(25,25,25,80);
-  rect(0,0,350,200);
+  rect(0,0,337,170);
   cp5.draw();
   cam.endHUD();
   hint(ENABLE_DEPTH_TEST);
