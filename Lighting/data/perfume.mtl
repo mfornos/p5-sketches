@@ -1,0 +1,12 @@
+#
+# Perfume Global Site Project material perfume.mtl
+#
+
+newmtl material__1
+	Ns 60
+	d 1
+	illum 2
+	Kd 0.6643 0.6643 0.6643
+	Ks 0.6643 0.6643 0.6643
+	Ka 1.0 1.0 1.0
+	map_Kd tex.png
