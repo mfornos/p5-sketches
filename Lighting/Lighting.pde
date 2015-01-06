@@ -80,7 +80,7 @@ void setup()
 void draw() 
 {
   background(bgc);
-  fill(250,250,250); // Default fill
+  fill(234,237,194); // Default fill
   lightSpecular(235,240,255);
   shininess(shininess);
   lightFalloff(fx, fy, fz);
