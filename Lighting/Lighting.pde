@@ -19,19 +19,16 @@ PShader[] shaders;
 PShader lit;
 PImage tex;
 
-color bgc = color(10,10,5); 
+color bgc = color(64,71,73); 
 PVector bgColor;
 
 // Control Parameters
-float shininess = 0.98,
+float shininess = 0.90,
       fresnel = 0.08,
       exposure = 1.0,
       transmitMin = 0.20,
       transmitMax = 0.80,
       wax = 1.5,
-      nlx = 0,           // light direction
-      nly = -100,
-      nlz = 0,
       aI  = 0.10,        // light intensities
       dI  = 0.50,
       sI  = 0.40;
@@ -81,9 +78,10 @@ void draw()
   ambientLight(bgc >> 16 & 0xFF, bgc >> 8 & 0xFF, bgc & 0xFF);
   lightSpecular(235,240,255);
   shininess(shininess);
+  pointLight(255, 255, 255, width/2, height, 200);
+  fill(250,250,250); // Default fill
   
   // Shader uniforms
-  lit.set("LightPos", nlx, nly, nlz);
   lit.set("AmbientIntensity", aI);
   lit.set("DiffuseIntensity", dI);
   lit.set("SpecularIntensity", sI);
@@ -98,7 +96,6 @@ void draw()
   shader(lit);
   
   pushMatrix();
-  fill(250,250,250);
   model.draw();
   popMatrix();
   
@@ -115,7 +112,6 @@ void draw()
   
   resetShader();
   
-  ambientLight(255,255,255);   // Light for P5 rendering
   gui();
 }
 
@@ -131,7 +127,7 @@ void loadModel(String name, float scale)
   model.scale(scale);
   model.translateToCenter();
   model.disableTexture();
-  model.disableMaterial();
+  //model.disableMaterial();
 }
 
 //
@@ -140,8 +136,11 @@ void loadModel(String name, float scale)
 
 void gui() 
 {
+  noLights();
   hint(DISABLE_DEPTH_TEST);
   cam.beginHUD();
+  fill(25,25,25,80);
+  rect(0,0,350,200);
   cp5.draw();
   cam.endHUD();
   hint(ENABLE_DEPTH_TEST);
@@ -199,32 +198,28 @@ void setupControls(ControlP5 cp5)
   e("exposure", 1.0, 3.0, 120, 20);
   e("fresnel", 0.01, 0.5, 230, 20);
   
-  e("nlx", -1000, 1000, 10, 50);
-  e("nly", -1000, 1000, 120, 50);
-  e("nlz", -1000, 1000, 230, 50);
+  e("aI", 0, 1.25, 10, 50);
+  e("dI", 0, 1.25, 120, 50);
+  e("sI", 0, 1.25, 230, 50);
   
-  e("aI", 0, 1.2, 10, 80);
-  e("dI", 0, 1.2, 120, 80);
-  e("sI", 0, 1.2, 230, 80);
-  
-  e("wax", 0.0, 3.0, 10, 110);
-  e("transmitMin", 0.0, 1.0, 120, 110);
-  e("transmitMax", 0.0, 1.0, 230, 110);
+  e("wax", 0.0, 3.0, 10, 80);
+  e("transmitMin", 0.0, 1.0, 120, 80);
+  e("transmitMax", 0.0, 1.0, 230, 80);
   
   cp5.addToggle("sphere")
-     .setPosition(10,160)
+     .setPosition(10,140)
      .setSize(10, 10);
   
   bgCp = cp5.addColorPicker("bgpicker")
           .setPosition(10, height-70)
           .setColorValue(bgc);
    
-  cp5.addTextlabel("palette", "PALETTE", 6, 130);
+  cp5.addTextlabel("palette", "PALETTE", 6, 110);
    
   dlModels = cp5.addDropdownList("Models")
-                .setPosition(10, 153);
+                .setPosition(10, 133);
   dlShaders = cp5.addDropdownList("Shaders")
-                 .setPosition(120, 153);
+                 .setPosition(120, 133);
 }
 
 void e(String name, float rx, float ry, float x, float y) 

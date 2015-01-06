@@ -9,4 +9,4 @@ newmtl material__1
 	Kd 0.6643 0.6643 0.6643
 	Ks 0.6643 0.6643 0.6643
 	Ka 1.0 1.0 1.0
-	map_Kd tex.png
+#	map_Kd tex.png

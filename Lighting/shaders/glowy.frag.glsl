@@ -67,10 +67,10 @@ float cookTorranceSpecular(
   float VdotN = max(dot(viewDirection, surfaceNormal), 0.0);
   float LdotN = max(dot(lightDirection, surfaceNormal), 0.0);
 
-  //Half angle vector
+  // Half angle vector
   vec3 H = normalize(lightDirection + viewDirection);
 
-  //Geometric term
+  // Geometric term
   float NdotH = max(dot(surfaceNormal, H), 0.0);
   float VdotH = max(dot(viewDirection, H), 0.000001);
   float LdotH = max(dot(lightDirection, H), 0.000001);
@@ -78,13 +78,13 @@ float cookTorranceSpecular(
   float G2 = (2.0 * NdotH * LdotN) / LdotH;
   float G = min(1.0, min(G1, G2));
   
-  //Distribution term
+  // Distribution term
   float D = beckmannDistribution(NdotH, roughness);
 
-  //Fresnel term
+  // Fresnel term
   float F = pow(1.0 - VdotN, fresnel);
 
-  //Multiply terms and done
+  // Multiply terms and done
   return  G * F * D / max(3.14159265 * VdotN, 0.000001);
 }
 
@@ -102,12 +102,13 @@ void main()
                            * (Waxiness + (1. - Waxiness)
                            * max(0., dot(n, l))) * DiffuseIntensity);
 
-  float w = 0.18 * (1.0 - Sharpness);
   vec3 specular = LIGHT_COLOR 
                             * SpecularColour
                             * cookTorranceSpecular(l, v, n, Roughness, Fresnel) 
                             * SpecularIntensity;
 
+  // Rim silhouette
+  float w = 0.18 * (1.0 - Sharpness);
   float rim = 1. - abs(dot(v, n));
 
   gl_FragColor = vec4(rim * (ambient + diffuse), 1);

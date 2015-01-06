@@ -4,7 +4,8 @@ uniform mat4 modelviewMatrix;
 uniform mat4 transformMatrix;
 uniform mat3 normalMatrix;
 
-uniform vec3 LightPos;
+uniform vec4 lightPosition;
+uniform vec3 lightNormal;
 
 attribute vec4 position;
 attribute vec4 color;
@@ -32,5 +33,5 @@ void main()
   N = normalize(normalMatrix * normal);
   P = position.xyz;
   V = -vec3(modelviewMatrix * position);
-  L = vec3(modelviewMatrix * (vec4(LightPos,1) - position));
+  L = vec3(modelviewMatrix * (lightPosition - position));
 }
