@@ -106,7 +106,7 @@ void main()
                       DiffuseColour * spotf * falloff * diffuse * DiffuseIntensity +
                       SpecularColour * spotf * falloff * specular * SpecularIntensity, 1);
 
-  float t1 = max(TransmitMax + (TransmitMin - TransmitMax) * (1. - pow(1. - n.z, Thinness)), 0.);
+  float t1 = max(TransmitMin + (TransmitMax - TransmitMin) * (1. - pow(1. - n.z, Thinness)), 0.);
   vec3 r = reflect(V, n);
   float m = 2.0 * sqrt( r.x*r.x + r.y*r.y + (r.z+1.0)*(r.z+1.0) );
   vec4 env = texture2D(texture, vec2(r.x/m + 0.5, r.y/m + 0.5));
