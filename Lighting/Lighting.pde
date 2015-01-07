@@ -23,7 +23,7 @@ color bgc = color(64,71,73);
 PVector bgColor;
 
 // Control Parameters
-float shininess = 0.90,
+float shininess = 0.80,
       fresnel = 0.08,
       exposure = 1.0,
       transmitMin = 0.0,
@@ -68,11 +68,12 @@ void setup()
   tex = loadImage("cafe.jpg");
   
   // Shaders
-  shaders = new PShader[4];
-  addShader("Cook");
+  shaders = new PShader[6];
+  addShader("GGX");
   addShader("Glowy");
   addShader("Trans");
   addShader("Irrad");
+  addShader("Cook");
 
   lit = shaders[0];           // Default shader
 }

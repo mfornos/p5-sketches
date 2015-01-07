@@ -4,6 +4,8 @@
 // Fake SSS, duh!
 // 
 
+#define PI 3.14159265
+
 uniform float AmbientIntensity;
 uniform float DiffuseIntensity;
 uniform float SpecularIntensity;
@@ -42,54 +44,39 @@ vec3 Uncharted2Tonemap(vec3 x)
   return ((x*(A*x+C*B)+D*E)/(x*(A*x+B)+D*F))-E/F;
 }
 
-float beckmannDistribution(float x, float roughness) {
-  float NdotH = max(x, 0.0001);
-  float cos2Alpha = NdotH * NdotH;
-  float tan2Alpha = (cos2Alpha - 1.0) / cos2Alpha;
-  float roughness2 = roughness * roughness;
-  float denom = 3.141592653589793 * roughness2 * cos2Alpha * cos2Alpha;
-  return exp(tan2Alpha / roughness2) / denom;
+float G1V(float dotNV, float k)
+{
+  return 1.0/(dotNV*(1.0-k)+k);
 }
 
-float beckmannSpecular(
-  vec3 lightDirection,
-  vec3 viewDirection,
-  vec3 surfaceNormal,
-  float roughness) {
-  return beckmannDistribution(dot(surfaceNormal, normalize(lightDirection + viewDirection)), roughness);
+float ggxSpecular(vec3 L, vec3 V, vec3 N, float roughness, float F0)
+{
+  float alpha = roughness*roughness;
+
+  vec3 H = normalize(V+L);
+
+  float dotNL = clamp(dot(N,L), 0., 1.);
+  float dotNH = clamp(dot(N,H), 0., 1.);
+  float dotLH = clamp(dot(L,H), 0., 1.);
+
+  float F, D, vis;
+
+  // D
+  float alphaSqr = alpha*alpha;
+  float denom = dotNH * dotNH *(alphaSqr-1.0) + 1.0;
+  D = alphaSqr/(PI * denom * denom);
+
+  // F
+  float dotLH5 = pow(1.0-dotLH,5.);
+  F = F0 + (1.0-F0)*(dotLH5);
+
+  // V
+  float k = alpha/2.0;
+  vis = G1V(dotLH,k)*G1V(dotLH,k);
+
+  float specular = dotNL * D * F * vis;
+  return specular;
 }
-
-float cookTorranceSpecular(
-  vec3 lightDirection,
-  vec3 viewDirection,
-  vec3 surfaceNormal,
-  float roughness,
-  float fresnel) {
-
-  float VdotN = max(dot(viewDirection, surfaceNormal), 0.0);
-  float LdotN = max(dot(lightDirection, surfaceNormal), 0.0);
-
-  // Half angle vector
-  vec3 H = normalize(lightDirection + viewDirection);
-
-  // Geometric term
-  float NdotH = max(dot(surfaceNormal, H), 0.0);
-  float VdotH = max(dot(viewDirection, H), 0.000001);
-  float LdotH = max(dot(lightDirection, H), 0.000001);
-  float G1 = (2.0 * NdotH * VdotN) / VdotH;
-  float G2 = (2.0 * NdotH * LdotN) / LdotH;
-  float G = min(1.0, min(G1, G2));
-  
-  // Distribution term
-  float D = beckmannDistribution(NdotH, roughness);
-
-  // Fresnel term
-  float F = pow(1.0 - VdotN, fresnel);
-
-  // Multiply terms and done
-  return  G * F * D / max(3.14159265 * VdotN, 0.000001);
-}
-
 
 void main()
 { 
@@ -108,7 +95,7 @@ void main()
   vec3 specular = LIGHT_COLOR 
                             * spotf * falloff
                             * SpecularColour
-                            * cookTorranceSpecular(l, v, n, Roughness, Fresnel) 
+                            * ggxSpecular(l, v, n, Roughness, Fresnel) 
                             * SpecularIntensity;
 
   // Rim silhouette

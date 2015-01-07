@@ -2,6 +2,8 @@
 // Transmission Shader
 // --------------------------------------------
 
+#define PI 3.14159265
+
 uniform sampler2D texture;
 
 uniform float AmbientIntensity;
@@ -41,52 +43,38 @@ vec3 Uncharted2Tonemap(vec3 x)
   return ((x*(A*x+C*B)+D*E)/(x*(A*x+B)+D*F))-E/F;
 }
 
-float beckmannDistribution(float x, float roughness) {
-  float NdotH = max(x, 0.0001);
-  float cos2Alpha = NdotH * NdotH;
-  float tan2Alpha = (cos2Alpha - 1.0) / cos2Alpha;
-  float roughness2 = roughness * roughness;
-  float denom = 3.141592653589793 * roughness2 * cos2Alpha * cos2Alpha;
-  return exp(tan2Alpha / roughness2) / denom;
+float G1V(float dotNV, float k)
+{
+  return 1.0/(dotNV*(1.0-k)+k);
 }
 
-float beckmannSpecular(
-  vec3 lightDirection,
-  vec3 viewDirection,
-  vec3 surfaceNormal,
-  float roughness) {
-  return beckmannDistribution(dot(surfaceNormal, normalize(lightDirection + viewDirection)), roughness);
-}
+float ggxSpecular(vec3 L, vec3 V, vec3 N, float roughness, float F0)
+{
+  float alpha = roughness*roughness;
 
-float cookTorranceSpecular(
-  vec3 lightDirection,
-  vec3 viewDirection,
-  vec3 surfaceNormal,
-  float roughness,
-  float fresnel) {
+  vec3 H = normalize(V+L);
 
-  float VdotN = max(dot(viewDirection, surfaceNormal), 0.0);
-  float LdotN = max(dot(lightDirection, surfaceNormal), 0.0);
+  float dotNL = clamp(dot(N,L), 0., 1.);
+  float dotNH = clamp(dot(N,H), 0., 1.);
+  float dotLH = clamp(dot(L,H), 0., 1.);
 
-  //Half angle vector
-  vec3 H = normalize(lightDirection + viewDirection);
+  float F, D, vis;
 
-  //Geometric term
-  float NdotH = max(dot(surfaceNormal, H), 0.0);
-  float VdotH = max(dot(viewDirection, H), 0.000001);
-  float LdotH = max(dot(lightDirection, H), 0.000001);
-  float G1 = (2.0 * NdotH * VdotN) / VdotH;
-  float G2 = (2.0 * NdotH * LdotN) / LdotH;
-  float G = min(1.0, min(G1, G2));
-  
-  //Distribution term
-  float D = beckmannDistribution(NdotH, roughness);
+  // D
+  float alphaSqr = alpha*alpha;
+  float denom = dotNH * dotNH *(alphaSqr-1.0) + 1.0;
+  D = alphaSqr/(PI * denom * denom);
 
-  //Fresnel term
-  float F = pow(1.0 - VdotN, fresnel);
+  // F
+  float dotLH5 = pow(1.0-dotLH,5.);
+  F = F0 + (1.0-F0)*(dotLH5);
 
-  //Multiply terms and done
-  return  G * F * D / max(3.14159265 * VdotN, 0.000001);
+  // V
+  float k = alpha/2.0;
+  vis = G1V(dotLH,k)*G1V(dotLH,k);
+
+  float specular = dotNL * D * F * vis;
+  return specular;
 }
 
 
@@ -100,17 +88,17 @@ void main()
 
   float diffuse = max(0., dot(l,n));
 
-  float specular = cookTorranceSpecular(l, v, n, Roughness, Fresnel);
+  float specular = ggxSpecular(l, v, n, Roughness, Fresnel);
    
   gl_FragColor = vec4(AmbientColour * falloff * AmbientIntensity +
                       DiffuseColour * spotf * falloff * diffuse * DiffuseIntensity +
                       SpecularColour * spotf * falloff * specular * SpecularIntensity, 1);
 
   float t1 = max(TransmitMin + (TransmitMax - TransmitMin) * (1. - pow(1. - n.z, Thinness)), 0.);
-  vec3 r = reflect(V, n);
+  vec3 r = reflect(v, n);
   float m = 2.0 * sqrt( r.x*r.x + r.y*r.y + (r.z+1.0)*(r.z+1.0) );
   vec4 env = texture2D(texture, vec2(r.x/m + 0.5, r.y/m + 0.5));
-  gl_FragColor.rgb = (1. - t1) * gl_FragColor.rgb + t1 * env.rgb;
+  gl_FragColor.rgb = 0.75 * diffuse * ((1. - t1) * gl_FragColor.rgb + t1 * env.rgb);
 
   // Tone mapping
   gl_FragColor.rgb = Uncharted2Tonemap(gl_FragColor.rgb * Exposure) / Uncharted2Tonemap(vec3(1));

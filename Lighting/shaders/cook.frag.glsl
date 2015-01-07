@@ -2,6 +2,8 @@
 // Cook Torrance Shader
 // --------------------------------------------
 
+#define PI 3.14159265
+
 uniform float AmbientIntensity;
 uniform float DiffuseIntensity;
 uniform float SpecularIntensity;
@@ -39,16 +41,8 @@ float beckmannDistribution(float x, float roughness) {
   float cos2Alpha = NdotH * NdotH;
   float tan2Alpha = (cos2Alpha - 1.0) / cos2Alpha;
   float roughness2 = roughness * roughness;
-  float denom = 3.141592653589793 * roughness2 * cos2Alpha * cos2Alpha;
+  float denom = PI * roughness2 * cos2Alpha * cos2Alpha;
   return exp(tan2Alpha / roughness2) / denom;
-}
-
-float beckmannSpecular(
-  vec3 lightDirection,
-  vec3 viewDirection,
-  vec3 surfaceNormal,
-  float roughness) {
-  return beckmannDistribution(dot(surfaceNormal, normalize(lightDirection + viewDirection)), roughness);
 }
 
 float cookTorranceSpecular(
@@ -82,6 +76,27 @@ float cookTorranceSpecular(
   return  G * F * D / max(3.14159265 * VdotN, 0.000001);
 }
 
+float orenNayarDiffuse(
+  vec3 lightDirection,
+  vec3 viewDirection,
+  vec3 surfaceNormal,
+  float roughness,
+  float albedo) {
+  
+  float LdotV = dot(lightDirection, viewDirection);
+  float NdotL = dot(lightDirection, surfaceNormal);
+  float NdotV = dot(surfaceNormal, viewDirection);
+
+  float s = LdotV - NdotL * NdotV;
+  float t = mix(1.0, max(NdotL, NdotV), step(0.0, s));
+
+  float sigma2 = roughness * roughness;
+  float A = 1.0 + sigma2 * (albedo / (sigma2 + 0.13) + 0.5 / (sigma2 + 0.33));
+  float B = 0.45 * sigma2 / (sigma2 + 0.09);
+
+  return albedo * max(0.0, NdotL) * (A + B * s / t) / PI;
+}
+
 void main()
 { 
   vec3 l = normalize(L);
@@ -89,7 +104,7 @@ void main()
   vec3 v = normalize(V);
   // vec3 h = normalize(l+v);
 
-  float diffuse = max(0., dot(l,n));
+  float diffuse = orenNayarDiffuse(l, v, n, Roughness, 0.95);
   float specular = cookTorranceSpecular(l, v, n, Roughness, Fresnel);
     
   gl_FragColor = vec4(AmbientColour*falloff*AmbientIntensity +

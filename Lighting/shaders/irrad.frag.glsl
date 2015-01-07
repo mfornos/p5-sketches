@@ -2,6 +2,8 @@
 // Irradiance Shader
 // --------------------------------------------
 
+#define PI 3.14159265
+
 uniform float AmbientIntensity;
 uniform float DiffuseIntensity;
 uniform float SpecularIntensity;
@@ -36,21 +38,38 @@ vec3 Uncharted2Tonemap(vec3 x)
   return ((x*(A*x+C*B)+D*E)/(x*(A*x+B)+D*F))-E/F;
 }
 
-float beckmannDistribution(float x, float roughness) {
-  float NdotH = max(x, 0.0001);
-  float cos2Alpha = NdotH * NdotH;
-  float tan2Alpha = (cos2Alpha - 1.0) / cos2Alpha;
-  float roughness2 = roughness * roughness;
-  float denom = 3.141592653589793 * roughness2 * cos2Alpha * cos2Alpha;
-  return exp(tan2Alpha / roughness2) / denom;
+float G1V(float dotNV, float k)
+{
+  return 1.0/(dotNV*(1.0-k)+k);
 }
 
-float beckmannSpecular(
-  vec3 lightDirection,
-  vec3 viewDirection,
-  vec3 surfaceNormal,
-  float roughness) {
-  return beckmannDistribution(dot(surfaceNormal, normalize(lightDirection + viewDirection)), roughness);
+float ggxSpecular(vec3 L, vec3 V, vec3 N, float roughness, float F0)
+{
+  float alpha = roughness*roughness;
+
+  vec3 H = normalize(V+L);
+
+  float dotNL = clamp(dot(N,L), 0., 1.);
+  float dotNH = clamp(dot(N,H), 0., 1.);
+  float dotLH = clamp(dot(L,H), 0., 1.);
+
+  float F, D, vis;
+
+  // D
+  float alphaSqr = alpha*alpha;
+  float denom = dotNH * dotNH *(alphaSqr-1.0) + 1.0;
+  D = alphaSqr/(PI * denom * denom);
+
+  // F
+  float dotLH5 = pow(1.0-dotLH,5.);
+  F = F0 + (1.0-F0)*(dotLH5);
+
+  // V
+  float k = alpha/2.0;
+  vis = G1V(dotLH,k)*G1V(dotLH,k);
+
+  float specular = dotNL * D * F * vis;
+  return specular;
 }
 
 mat4 gracered = mat4(
@@ -77,6 +96,27 @@ float irradmat(mat4 M, vec3 v)
     return dot(n, M * n);
 }
 
+float orenNayarDiffuse(
+  vec3 lightDirection,
+  vec3 viewDirection,
+  vec3 surfaceNormal,
+  float roughness,
+  float albedo) {
+  
+  float LdotV = dot(lightDirection, viewDirection);
+  float NdotL = dot(lightDirection, surfaceNormal);
+  float NdotV = dot(surfaceNormal, viewDirection);
+
+  float s = LdotV - NdotL * NdotV;
+  float t = mix(1.0, max(NdotL, NdotV), step(0.0, s));
+
+  float sigma2 = roughness * roughness;
+  float A = 1.0 + sigma2 * (albedo / (sigma2 + 0.13) + 0.5 / (sigma2 + 0.33));
+  float B = 0.45 * sigma2 / (sigma2 + 0.09);
+
+  return albedo * max(0.0, NdotL) * (A + B * s / t) / PI;
+}
+
 void main()
 { 
 
@@ -85,7 +125,7 @@ void main()
   vec3 v = normalize(V);
   // vec3 h = normalize(l+v);
 
-  float diffuse = max(.0, dot(l,n));
+  float diffuse = orenNayarDiffuse(l,v,n,Roughness,0.95);
 
   // Irradiance
   vec3 irrad = vec3( 
@@ -96,7 +136,7 @@ void main()
   gl_FragColor = vec4((AmbientColour * falloff * AmbientIntensity + 
                       DiffuseColour * spotf * falloff * diffuse*DiffuseIntensity +
                       SpecularColour * spotf * falloff 
-                      * beckmannSpecular(l,v,n,Roughness)*SpecularIntensity) * 0.5 +
+                      * ggxSpecular(l,v,n,Roughness,Fresnel)*SpecularIntensity) * 0.5 +
                       smoothstep(.0, 1.5, irrad * 50. * diffuse),
                   1);
 
