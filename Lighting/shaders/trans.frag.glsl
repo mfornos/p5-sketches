@@ -94,11 +94,12 @@ void main()
                       DiffuseColour * spotf * falloff * diffuse * DiffuseIntensity +
                       SpecularColour * spotf * falloff * specular * SpecularIntensity, 1);
 
-  float t1 = max(TransmitMin + (TransmitMax - TransmitMin) * (1. - pow(1. - n.z, Thinness)), 0.);
+  float t1 = TransmitMin + (TransmitMax - TransmitMin) * (1. - pow(1. - n.z, Thinness));
   vec3 r = reflect(v, n);
   float m = 2.0 * sqrt( r.x*r.x + r.y*r.y + (r.z+1.0)*(r.z+1.0) );
   vec4 env = texture2D(texture, vec2(r.x/m + 0.5, r.y/m + 0.5));
-  gl_FragColor.rgb = 0.75 * diffuse * ((1. - t1) * gl_FragColor.rgb + t1 * env.rgb);
+  float extinction = 5.;
+  gl_FragColor.rgb = exp(-extinction * (0.5-((1. - t1) * gl_FragColor.rgb + t1 * env.rgb))) * diffuse;
 
   // Tone mapping
   gl_FragColor.rgb = Uncharted2Tonemap(gl_FragColor.rgb * Exposure) / Uncharted2Tonemap(vec3(1));

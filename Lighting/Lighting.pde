@@ -68,7 +68,7 @@ void setup()
   tex = loadImage("cafe.jpg");
   
   // Shaders
-  shaders = new PShader[6];
+  shaders = new PShader[5];
   addShader("GGX");
   addShader("Glowy");
   addShader("Trans");
