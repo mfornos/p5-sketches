@@ -23,8 +23,8 @@ color bgc = color(64,71,73);
 PVector bgColor;
 
 // Control Parameters
-float shininess = 0.80,
-      fresnel = 0.08,
+float shininess = 0.50,
+      fresnel = 0.20,
       exposure = 1.0,
       transmitMin = 0.17,
       transmitMax = 0.50,
@@ -41,7 +41,7 @@ ColorPicker bgCp;
 void setup() 
 {
   size(1040, 600, P3D);
-  light(350, -200, 400);
+  light(200, -200, width);
   frameRate(60);
   noStroke();
   background(bgc);
