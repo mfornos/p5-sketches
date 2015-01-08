@@ -26,14 +26,13 @@ PVector bgColor;
 float shininess = 0.80,
       fresnel = 0.08,
       exposure = 1.0,
-      transmitMin = 0.0,
-      transmitMax = 0.07,
+      transmitMin = 0.17,
+      transmitMax = 0.50,
       wax = 0.45,
       lx, ly, lz,        // light position
-      fx, fy, fz,        // light falloff
-      aI  = 0.10,        // light intensities
-      dI  = 0.50,
-      sI  = 0.40;
+      aK  = 0.05,        // light intensities
+      dK  = 0.50,
+      sK  = 0.40;
 boolean sphere = true;
 DropdownList dlShaders,
              dlModels;
@@ -42,7 +41,7 @@ ColorPicker bgCp;
 void setup() 
 {
   size(1040, 600, P3D);
-  light(300, -height, 200, 0.0025, 0.002, 0.0);
+  light(350, -200, 400);
   frameRate(60);
   noStroke();
   background(bgc);
@@ -84,13 +83,12 @@ void draw()
   fill(234,237,194); // Default fill
   lightSpecular(235,240,255);
   shininess(shininess);
-  lightFalloff(fx, fy, fz);
   spotLight(255, 255, 255, lx, ly, lz, -1, 0, 0, PI/2, 600);
 
   // Shader uniforms
-  lit.set("AmbientIntensity", aI);
-  lit.set("DiffuseIntensity", dI);
-  lit.set("SpecularIntensity", sI);
+  lit.set("aK", aK);
+  lit.set("dK", dK);
+  lit.set("sK", sK);
   lit.set("BgColor", bgColor);
   lit.set("Resolution", (float) width, (float) height);
   lit.set("Exposure", exposure);
@@ -136,14 +134,11 @@ void loadModel(String name, float scale)
   //model.disableMaterial();
 }
 
-void light(float x, float y, float z, float fx, float fy, float fz)
+void light(float x, float y, float z)
 {
   lx = x;
   ly = y;
   lz = z;
-  this.fx = fx;
-  this.fy = fy;
-  this.fz = fz;
 }
 
 //
@@ -210,15 +205,15 @@ void setupControls(ControlP5 cp5)
 {
   cp5.setAutoDraw(false);
   
-  e("shininess", 0.5, 1.0, 10, 20);
-  e("exposure", 1.0, 3.0, 120, 20);
+  e("shininess", 0., 1.0, 10, 20);
+  e("exposure", 0, 2.0, 120, 20);
   e("fresnel", 0.01, 0.5, 230, 20);
   
-  e("aI", 0, 1.25, 10, 50);
-  e("dI", 0, 1.25, 120, 50);
-  e("sI", 0, 1.25, 230, 50);
+  e("aK", 0, 0.5, 10, 50);
+  e("dK", 0, 1, 120, 50);
+  e("sK", 0, 1, 230, 50);
   
-  e("wax", 0.0, 3.0, 10, 80);
+  e("wax", 0.0, 3.5, 10, 80);
   e("transmitMin", 0.0, 1.0, 120, 80);
   e("transmitMax", 0.0, 1.0, 230, 80);
   
@@ -233,13 +228,9 @@ void setupControls(ControlP5 cp5)
   dlShaders = cp5.addDropdownList("Shaders")
                  .setPosition(120, 133);
   
-  e("fx", 0.0, 1.0, 10, height-45);
-  e("fy", 0.0, 1.0, 120, height-45);
-  e("fz", 0.0, 1.0, 230, height-45);
-  
-  e("lx", -width, width, 10, height-20);
-  e("ly", -height, height, 120, height-20);
-  e("lz", -height, height, 230, height-20);
+  e("lx", -width, width, 10, height-40);
+  e("ly", -height, height, 120, height-40);
+  e("lz", -height, height, 230, height-40);
   
   bgCp = cp5.addColorPicker("bgpicker")
           .setPosition(10, height-120)

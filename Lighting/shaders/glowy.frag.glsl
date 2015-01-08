@@ -6,30 +6,27 @@
 
 #define PI 3.14159265
 
-uniform float AmbientIntensity;
-uniform float DiffuseIntensity;
-uniform float SpecularIntensity;
-uniform float Exposure;
-uniform vec3 BgColor;
-uniform vec2 Resolution;
-uniform float Fresnel;
-uniform float Waxiness;
+uniform float aK;
+uniform float dK;
+uniform float sK;
 
-varying vec3 AmbientColour;
-varying vec3 DiffuseColour;
-varying vec3 SpecularColour;
-varying float Roughness;
+uniform float Waxiness;
+uniform float Exposure;
+uniform float Fresnel;
+
+varying vec3 aC;
+varying vec3 dC;
+varying vec3 sC;
 
 varying vec3 N;
 varying vec3 P;
 varying vec3 V;
 varying vec3 L;
-varying float spotf;
-varying float falloff;
+
+varying float I;
+varying float Roughness;
 
 const float Sharpness = 0.5;
-
-vec3 TRANS_COLOR = BgColor;
 const vec3 LIGHT_COLOR = vec3(.9, .9, 1);
 
 vec3 Uncharted2Tonemap(vec3 x)
@@ -83,24 +80,18 @@ void main()
   vec3 l = normalize(L);
   vec3 n = normalize(N);
   vec3 v = normalize(V);
-  // vec3 h = normalize(l+v);
 
-  vec3 ambient = AmbientColour * falloff * TRANS_COLOR * AmbientIntensity;
-
-  vec3 diffuse = (LIGHT_COLOR * DiffuseColour
-                           * spotf * falloff
+  vec3 ambient = aC * aK;
+  vec3 diffuse = I * LIGHT_COLOR * dC * dK
                            * (Waxiness + (1. - Waxiness)
-                           * max(0., dot(n, l))) * DiffuseIntensity);
-
-  vec3 specular = LIGHT_COLOR 
-                            * spotf * falloff
-                            * SpecularColour
-                            * ggxSpecular(l, v, n, Roughness, Fresnel) 
-                            * SpecularIntensity;
+                           * max(0., dot(n, l)));
+  vec3 specular = I * LIGHT_COLOR 
+                            * sC * sK
+                            * ggxSpecular(l, v, n, Roughness, Fresnel);
 
   // Rim silhouette
   float w = 0.18 * (1.0 - Sharpness);
-  float rim = 1. - abs(dot(v, n));
+  float rim = 1. - abs(dot(v, n)); // abs illuminate 2 sides
 
   gl_FragColor = vec4(rim * (ambient + diffuse), 1);
   gl_FragColor.rgb += rim * diffuse;

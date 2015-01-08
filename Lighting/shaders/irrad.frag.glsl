@@ -4,27 +4,28 @@
 
 #define PI 3.14159265
 
-uniform float AmbientIntensity;
-uniform float DiffuseIntensity;
-uniform float SpecularIntensity;
+uniform float aK;
+uniform float dK;
+uniform float sK;
+
+uniform float Waxiness;
 uniform float Exposure;
-uniform vec3 BgColor;
-uniform vec2 Resolution;
 uniform float Fresnel;
 
-const float albedo = 0.65;
-
-varying vec3 AmbientColour;
-varying vec3 DiffuseColour;
-varying vec3 SpecularColour;
-varying float Roughness;
+varying vec3 aC;
+varying vec3 dC;
+varying vec3 sC;
 
 varying vec3 N;
 varying vec3 P;
 varying vec3 V;
 varying vec3 L;
-varying float spotf;
-varying float falloff;
+
+varying float I;
+varying float Roughness;
+
+const float albedo = 0.65;
+const vec3 CF = vec3(1.0 / 2.2);
 
 vec3 Uncharted2Tonemap(vec3 x)
 {
@@ -118,14 +119,12 @@ float orenNayarDiffuse(
 }
 
 void main()
-{ 
-
+{
   vec3 l = normalize(L);
   vec3 n = normalize(N);
   vec3 v = normalize(V);
-  // vec3 h = normalize(l+v);
 
-  float diffuse = orenNayarDiffuse(l,v,n,Roughness,albedo);
+  float diffuse = orenNayarDiffuse(l, v, n, Roughness, albedo);
 
   // Irradiance
   vec3 irrad = vec3( 
@@ -133,10 +132,9 @@ void main()
      albedo * irradmat(gracegreen, n),
      albedo * irradmat(graceblue, n));
 
-  gl_FragColor = vec4(AmbientColour * falloff * AmbientIntensity
-                      + DiffuseColour * spotf * falloff * diffuse * DiffuseIntensity 
-                      + SpecularColour * spotf * falloff 
-                      * ggxSpecular(l,v,n,Roughness,Fresnel) * SpecularIntensity,
+  gl_FragColor = vec4(aC * aK
+                      + I * (dC * dK * diffuse
+                      + sC * sK * ggxSpecular(l,v,n,Roughness,Fresnel)),
                   1);
   float extinction = 15.;
   gl_FragColor.rgb += exp(-extinction * (irrad * 10.)) * diffuse;
@@ -145,6 +143,6 @@ void main()
   gl_FragColor.rgb = Uncharted2Tonemap(gl_FragColor.rgb * Exposure) 
                      / Uncharted2Tonemap(vec3(1));
   // Gamma correction
-  gl_FragColor.rgb = pow(gl_FragColor.rgb, vec3(1.0 / 2.2));
+  gl_FragColor.rgb = pow(gl_FragColor.rgb, CF);
 }
 

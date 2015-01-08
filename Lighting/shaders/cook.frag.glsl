@@ -4,25 +4,26 @@
 
 #define PI 3.14159265
 
-uniform float AmbientIntensity;
-uniform float DiffuseIntensity;
-uniform float SpecularIntensity;
+uniform float aK;
+uniform float dK;
+uniform float sK;
+
 uniform float Exposure;
 uniform vec3 BgColor;
 uniform vec2 Resolution;
 uniform float Fresnel;
 
-varying vec3 AmbientColour;
-varying vec3 DiffuseColour;
-varying vec3 SpecularColour;
-varying float Roughness;
+varying vec3 aC;
+varying vec3 dC;
+varying vec3 sC;
 
 varying vec3 N;
 varying vec3 P;
 varying vec3 V;
 varying vec3 L;
-varying float spotf;
-varying float falloff;
+
+varying float I;
+varying float Roughness;
 
 vec3 Uncharted2Tonemap(vec3 x)
 {
@@ -107,9 +108,9 @@ void main()
   float diffuse = orenNayarDiffuse(l, v, n, Roughness, 0.95);
   float specular = cookTorranceSpecular(l, v, n, Roughness, Fresnel);
     
-  gl_FragColor = vec4(AmbientColour*falloff*AmbientIntensity +
-                      DiffuseColour*spotf*falloff*diffuse*DiffuseIntensity +
-                      SpecularColour*spotf*falloff*specular*SpecularIntensity,1);
+  gl_FragColor = vec4(aC * aK +
+                      I * (dC * dK * diffuse +
+                      sC * sK * specular), 1);
 
   // Tone mapping
   gl_FragColor.rgb = Uncharted2Tonemap(gl_FragColor.rgb * Exposure) / Uncharted2Tonemap(vec3(1));
