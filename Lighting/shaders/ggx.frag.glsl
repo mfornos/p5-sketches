@@ -3,18 +3,25 @@
 // --------------------------------------------
 // Optimization from optimized-ggx.hlsl by John Hable
 
-uniform float aK;
-uniform float dK;
-uniform float sK;
+#define PI 3.14159265358979323846264
 
-uniform float Exposure;
-uniform vec3 BgColor;
-uniform vec2 Resolution;
-uniform float Fresnel;
+uniform float Ka;
+uniform float Kd;
+uniform float Ks;
+uniform float Ke;
 
-varying vec3 aC;
-varying vec3 dC;
-varying vec3 sC;
+uniform float gamma;
+uniform float exposure;
+uniform float fresnel;
+uniform float albedo;
+
+uniform vec3 bgColor;
+uniform vec2 resolution;
+
+varying vec3 Ca;
+varying vec3 Cs;
+varying vec3 Cd;
+varying vec3 Ce;
 
 varying vec3 N;
 varying vec3 P;
@@ -22,9 +29,9 @@ varying vec3 V;
 varying vec3 L;
 
 varying float I;
-varying float Roughness;
+varying float roughness;
 
-vec3 Uncharted2Tonemap(vec3 x)
+vec3 tonemap(vec3 x)
 {
   float A = 0.15;
   float B = 0.50;
@@ -41,7 +48,7 @@ float G1V(float dotNV, float k)
 	return 1.0/(dotNV*(1.0-k)+k);
 }
 
-float LightingFuncGGX(vec3 L, vec3 V, vec3 N, float roughness, float F0)
+float ggxSpecular(vec3 L, vec3 V, vec3 N, float roughness, float F0)
 {
 	float alpha = roughness*roughness;
 
@@ -72,7 +79,7 @@ float LightingFuncGGX(vec3 L, vec3 V, vec3 N, float roughness, float F0)
 	return specular;
 }
 
-float LightingFuncGGX_OPT1(vec3 L, vec3 V, vec3 N, float roughness, float F0)
+float ggxSpecularOpt1(vec3 L, vec3 V, vec3 N, float roughness, float F0)
 {
 	float alpha = roughness*roughness;
 
@@ -102,23 +109,50 @@ float LightingFuncGGX_OPT1(vec3 L, vec3 V, vec3 N, float roughness, float F0)
 	return specular;
 }
 
+float orenNayarDiffuse( 
+  vec3 l,
+  vec3 v,
+  vec3 n,
+  float roughness,
+  float albedo ) 
+{
+  
+  float LdotV = dot( l, v );
+  float NdotL = dot( n, l );
+  float NdotV = dot( n, v );
+
+  float s = LdotV - NdotL * NdotV;
+  float t = mix( 1.0, max( NdotL, NdotV ), step( 0.0, s ) );
+
+  float sigma2 = roughness * roughness;
+  float A = 1.0 + sigma2 * ( albedo / ( sigma2 + 0.13 ) + 0.5 / ( sigma2 + 0.33 ) );
+  float B = 0.45 * sigma2 / ( sigma2 + 0.09 );
+
+  return albedo * max( 0.0, NdotL ) * ( A + B * s / t ) / PI;
+}
+
+vec3 BRDF( vec3 l, vec3 v, vec3 n ) 
+{
+  // float diffuse = max(dot(l,n), 0.0);
+  float diffuse = orenNayarDiffuse( l, v, n, roughness, albedo );
+  float specular = diffuse <= 0.0 ? 0.0 : ggxSpecularOpt1(l, v, n, roughness, fresnel);
+  vec3 b = Ca * Ka + I * (Cd * diffuse * Kd + Cs * specular * Ks);
+  return b;
+}
+
 void main()
 { 
-  vec3 l = normalize(L);
-  vec3 n = normalize(N);
-  vec3 v = normalize(V);
-  // vec3 h = normalize(l+v);
+  vec3 l = normalize( L ); // Light direction
+  vec3 n = normalize( N ); // Surface normal
+  vec3 v = normalize( V ); // View direction
 
-  float diffuse = max(0., dot(l,n));
-  float specular = LightingFuncGGX_OPT1(l, v, n, Roughness, Fresnel);
-    
-  gl_FragColor = vec4(aC * aK +
-                      I * (dC * diffuse * dK +
-                      sC * specular * sK), 1);
+  vec3 b = BRDF( l, v, n );
 
   // Tone mapping
-  gl_FragColor.rgb = Uncharted2Tonemap(gl_FragColor.rgb * Exposure) / Uncharted2Tonemap(vec3(1));
+  b = tonemap(b * exposure) / tonemap(vec3(1));
 
   // Gamma correction
-  gl_FragColor.rgb = pow(gl_FragColor.rgb, vec3(1.0 / 2.2));
+  b = pow( b, vec3(1.0 / gamma) );
+
+  gl_FragColor = vec4(clamp(b, vec3(0), vec3(1)), 1.0);
 }

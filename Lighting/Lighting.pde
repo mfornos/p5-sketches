@@ -26,14 +26,17 @@ PVector bgColor;
 float shininess = 0.50,
       fresnel = 0.20,
       exposure = 1.0,
+      albedo = 0.9,
       transmitMin = 0.17,
       transmitMax = 0.50,
       wax = 0.45,
       lx, ly, lz,        // light position
-      aK  = 0.05,        // light intensities
-      dK  = 0.50,
-      sK  = 0.40;
-boolean sphere = true;
+      lr,
+      Ka  = 0.05,        // light intensities
+      Kd  = 0.50,
+      Ks  = 0.40;
+boolean sphere = true,
+        light  = false;
 DropdownList dlShaders,
              dlModels;
 ColorPicker bgCp;
@@ -41,7 +44,7 @@ ColorPicker bgCp;
 void setup() 
 {
   size(1040, 600, P3D);
-  light(200, -200, width);
+  light(200, -200, width, 50);
   frameRate(60);
   noStroke();
   background(bgc);
@@ -80,22 +83,36 @@ void setup()
 void draw() 
 {
   background(bgc);
-  fill(234,237,194); // Default fill
+  fill(234, 237, 194); // Default fill
+  
+  if(light) {
+    pushMatrix();
+    translate(lx, ly, lz);
+    fill(255);
+    noStroke();
+    sphere(lr);
+    noFill();
+    popMatrix();
+  }
+  
   lightSpecular(235,240,255);
   shininess(shininess);
-  spotLight(255, 255, 255, lx, ly, lz, -1, 0, 0, PI/2, 600);
+  spotLight(255, 255, 255, lx, ly, lz, 0, 0, -1, 0, 0);
 
   // Shader uniforms
-  lit.set("aK", aK);
-  lit.set("dK", dK);
-  lit.set("sK", sK);
-  lit.set("BgColor", bgColor);
-  lit.set("Resolution", (float) width, (float) height);
-  lit.set("Exposure", exposure);
-  lit.set("Fresnel", fresnel);
-  lit.set("Waxiness", wax);
-  lit.set("TransmitMin", transmitMin);
-  lit.set("TransmitMax", transmitMax);
+  lit.set("Ka", Ka);
+  lit.set("Kd", Kd);
+  lit.set("Ks", Ks);
+  lit.set("Lr", lr);
+  lit.set("bgColor", bgColor);
+  lit.set("gamma", 2.2);
+  lit.set("albedo", albedo);
+  lit.set("resolution", (float) width, (float) height);
+  lit.set("exposure", exposure);
+  lit.set("fresnel", fresnel);
+  lit.set("waxiness", wax);
+  lit.set("transmitMin", transmitMin);
+  lit.set("transmitMax", transmitMax);
   
   shader(lit);
   
@@ -134,11 +151,12 @@ void loadModel(String name, float scale)
   //model.disableMaterial();
 }
 
-void light(float x, float y, float z)
+void light(float x, float y, float z, float r)
 {
   lx = x;
   ly = y;
   lz = z;
+  lr = r;
 }
 
 //
@@ -209,16 +227,19 @@ void setupControls(ControlP5 cp5)
   e("exposure", 0, 2.0, 120, 20);
   e("fresnel", 0.01, 0.5, 230, 20);
   
-  e("aK", 0, 0.5, 10, 50);
-  e("dK", 0, 1, 120, 50);
-  e("sK", 0, 1, 230, 50);
+  e("Ka", 0, 0.5, 10, 50);
+  e("Kd", 0, 1, 120, 50);
+  e("Ks", 0, 1, 230, 50);
   
   e("wax", 0.0, 3.5, 10, 80);
   e("transmitMin", 0.0, 1.0, 120, 80);
   e("transmitMax", 0.0, 1.0, 230, 80);
   
   cp5.addToggle("sphere")
-     .setPosition(10,140)
+     .setPosition(10, 140)
+     .setSize(10, 10);
+  cp5.addToggle("light")
+     .setPosition(50, 140)
      .setSize(10, 10);
  
   cp5.addTextlabel("palette", "PALETTE", 6, 110);
@@ -228,9 +249,11 @@ void setupControls(ControlP5 cp5)
   dlShaders = cp5.addDropdownList("Shaders")
                  .setPosition(120, 133);
   
-  e("lx", -width, width, 10, height-40);
-  e("ly", -height, height, 120, height-40);
-  e("lz", -height, height, 230, height-40);
+  e("lx", -width/2, width/2, 10, height-45);
+  e("ly", -height/2, height/2, 120, height-45);
+  e("lz", -width/2, width/2, 230, height-45);
+  e("lr", 5, 65, 340, height-42);
+  e("albedo", 0.1, 0.95, 10, height-17);
   
   bgCp = cp5.addColorPicker("bgpicker")
           .setPosition(10, height-120)
