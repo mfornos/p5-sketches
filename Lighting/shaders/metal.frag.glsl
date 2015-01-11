@@ -106,7 +106,6 @@ void main(  )
   vec3 l = normalize( L );
   vec3 n = normalize( N );
   vec3 v = normalize( V );
-  vec3 p = normalize( P );
 
   float diffuse = orenNayarDiffuse( l, v, n, roughness, albedo );
   float specular = ggxSpecular( l, v, n, roughness, fresnel );
