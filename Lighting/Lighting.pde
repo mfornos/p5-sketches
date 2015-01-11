@@ -29,7 +29,7 @@ float shininess = 0.50,
       albedo = 0.9,
       transmitMin = 0.17,
       transmitMax = 0.50,
-      wax = 0.45,
+      strength = 0.3,
       lx, ly, lz,        // light position
       lr,
       Ka  = 0.05,        // light intensities
@@ -70,10 +70,11 @@ void setup()
   tex = loadImage("cafe.jpg");
   
   // Shaders
-  shaders = new PShader[5];
+  shaders = new PShader[6];
   addShader("GGX");
-  addShader("Glowy");
   addShader("Trans");
+  addShader("Jade");
+  addShader("Metal");
   addShader("Irrad");
   addShader("Cook");
 
@@ -110,7 +111,7 @@ void draw()
   lit.set("resolution", (float) width, (float) height);
   lit.set("exposure", exposure);
   lit.set("fresnel", fresnel);
-  lit.set("waxiness", wax);
+  lit.set("strength", strength);
   lit.set("transmitMin", transmitMin);
   lit.set("transmitMax", transmitMax);
   
@@ -231,7 +232,7 @@ void setupControls(ControlP5 cp5)
   e("Kd", 0, 1, 120, 50);
   e("Ks", 0, 1, 230, 50);
   
-  e("wax", 0.0, 3.5, 10, 80);
+  e("strength", 0.01, 1.0, 10, 80);
   e("transmitMin", 0.0, 1.0, 120, 80);
   e("transmitMax", 0.0, 1.0, 230, 80);
   

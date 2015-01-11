@@ -1,8 +1,12 @@
 // --------------------------------------------
-// Transmittance Shader
+// Jade Shader
 // --------------------------------------------
 
 #define PI 3.14159265358979323846264
+
+uniform sampler2D texture;
+uniform float transmitMin;
+uniform float transmitMax;
 
 uniform float Ka;
 uniform float Kd;
@@ -139,31 +143,21 @@ float distance(vec3 p, vec3 n, vec3 l)
 
   vec3 posL = sp * normalize(L-P);
 
-  // For testing without shadow map
-  // Fetch depth from the shadow map:
-  // (Depth from shadow maps is expected to be linear)
-  float depth = ( 2.0 * gl_FragCoord.z - gl_DepthRange.near - gl_DepthRange.far ) /
-                ( gl_DepthRange.far - gl_DepthRange.near );
+  float depth = (2.0 * gl_FragCoord.z - gl_DepthRange.near - gl_DepthRange.far) /
+    (gl_DepthRange.far - gl_DepthRange.near);
 
-  float d1 = depth * -N.z; // shwmaps[i].Sample(sampler, posL.xy / posL.w);
+  float d1 = depth * -N.z;
   float d2 = posL.z;
 
   // Calculate the difference:
   return abs(d1 - d2);
 }
 
-vec3 T(float s) {
-  return vec3(0.233, 0.455, 0.649) * exp(-s * s / 0.0064) +
-         vec3(0.1,   0.336, 0.344) * exp(-s * s / 0.0484) +
-         vec3(0.118, 0.198, 0.0)   * exp(-s * s / 0.187)  +
-         vec3(0.113, 0.007, 0.007) * exp(-s * s / 0.567)  +
-         vec3(0.358, 0.004, 0.0)   * exp(-s * s / 1.99)   +
-         vec3(0.078, 0.0,   0.0)   * exp(-s * s / 7.41);
-}
-
 void main()
 { 
-  float waxiness = 0.15;
+  const float waxiness = 0.75;
+  const vec3 tint = vec3( 0.015, 0.674, 0.419 );
+
   vec3 l = normalize( L ); // Light direction
   vec3 n = normalize( N ); // Surface normal
   vec3 v = normalize( V ); // View direction
@@ -172,22 +166,29 @@ void main()
   float diffuse = orenNayarDiffuse( l, v, n, roughness, albedo );
   diffuse = waxiness + (1. - waxiness) * diffuse;
   float specular = diffuse <= 0.0 ? 0.0 : ggxSpecularOpt1(l, v, n, roughness, fresnel);
-  vec3 b = Ca * Ka + I * (Cd * diffuse * Kd + Cs * specular * Ks);
+  vec3 b = Ca * Ka + I * tint * Kd * diffuse;
 
-  // Estimate the irradiance on the back
   float irradiance = max( 0.3 + dot( -n, l ), 0.0 );
 
   // Calculate the distance traveled by the light inside of the object
   float s = distance( p, n, l ) / strength;
 
-  float R0 = 1. / 2.4;
-  float refraction = R0 + (1.0 - R0) * pow((1.0 - dot(-p, n)), 5.0);
-
   // Calculate transmitted light
-  vec3 transmittance = T( s ) * Kd * Cd * albedo * irradiance * refraction;
-
+  vec3 transmittance = exp(-s * s) * tint * irradiance * albedo;
+  float R0 = 1./2.4; // refract(p, n, 1.67);
+  float refraction = R0 + (1.0 - R0) * pow((1.0 - dot(-p, n)), 5.0);
   // Add the contribution
-  b += I * transmittance;
+  b += I * transmittance * refraction;
+
+  float thinness = 5.0;
+  float t1 = transmitMax * ( 1. - pow( 1. - n.z, thinness ) );
+  vec3 r = reflect( v, n );
+  float m = 2.0 * sqrt(  r.x*r.x + r.y*r.y + ( r.z+1.0 )*( r.z+1.0 )  );
+  vec4 env = texture2D( texture, vec2( r.x / m + 0.5, r.y / m + 0.5 ) );
+  float extinction = 5.;
+  b += I * exp( -extinction *
+                 ( 1. - transmitMin - ( ( 1. - t1 ) * b + t1 * env.rgb ) ) ) * diffuse;
+  b += I * Cs * specular * Ks;
 
   // Tone mapping
   b = tonemap(b * exposure) / tonemap(vec3(1));

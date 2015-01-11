@@ -8,7 +8,7 @@ Kd .8 .4 .4
 
 newmtl hide
 Ka 0 0 0
-Kd .6 .6 .45
+Kd .998 .898 .784
 
 #-- same as hide
 newmtl utter_tail
