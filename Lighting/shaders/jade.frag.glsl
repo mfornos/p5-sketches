@@ -155,8 +155,9 @@ float distance(vec3 p, vec3 n, vec3 l)
 
 void main()
 { 
-  const float waxiness = 0.75;
-  const vec3 tint = vec3( 0.015, 0.674, 0.419 );
+  const float waxiness = 0.65;
+  const vec3 Td = vec3( 0.095, 0.974, 0.719 );
+  const vec3 Ts = vec3( 0.316 );
 
   vec3 l = normalize( L ); // Light direction
   vec3 n = normalize( N ); // Surface normal
@@ -166,19 +167,13 @@ void main()
   float diffuse = orenNayarDiffuse( l, v, n, roughness, albedo );
   diffuse = waxiness + (1. - waxiness) * diffuse;
   float specular = diffuse <= 0.0 ? 0.0 : ggxSpecularOpt1(l, v, n, roughness, fresnel);
-  vec3 b = Ca * Ka + I * tint * Kd * diffuse;
+  vec3 b = Ca * Ka + I * Td * Kd * diffuse;
 
-  float irradiance = max( 0.3 + dot( -n, l ), 0.0 );
-
-  // Calculate the distance traveled by the light inside of the object
   float s = distance( p, n, l ) / strength;
 
-  // Calculate transmitted light
-  vec3 transmittance = exp(-s * s) * tint * irradiance * albedo;
-  float R0 = 1./2.4; // refract(p, n, 1.67);
+  float R0 = 1./1.61;
   float refraction = R0 + (1.0 - R0) * pow((1.0 - dot(-p, n)), 5.0);
-  // Add the contribution
-  b += I * transmittance * refraction;
+  b *= refraction;
 
   float thinness = 5.0;
   float t1 = transmitMax * ( 1. - pow( 1. - n.z, thinness ) );
@@ -187,8 +182,8 @@ void main()
   vec4 env = texture2D( texture, vec2( r.x / m + 0.5, r.y / m + 0.5 ) );
   float extinction = 5.;
   b += I * exp( -extinction *
-                 ( 1. - transmitMin - ( ( 1. - t1 ) * b + t1 * env.rgb ) ) ) * diffuse;
-  b += I * Cs * specular * Ks;
+                 ( 1. - transmitMin - ( ( 1. - t1 ) * b + t1 * env.rgb ) ) ) * s;
+  b += I * Ts * specular * Ks;
 
   // Tone mapping
   b = tonemap(b * exposure) / tonemap(vec3(1));
@@ -196,5 +191,5 @@ void main()
   // Gamma correction
   b = pow( b, vec3(1.0 / gamma) );
 
-  gl_FragColor = vec4(clamp(b, vec3(0), vec3(1)), 1.0);
+  gl_FragColor = vec4(clamp(b, vec3(0), vec3(1)), 1.);
 }
