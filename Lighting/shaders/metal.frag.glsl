@@ -113,7 +113,7 @@ void main(  )
   vec3 b = Ca * Ka + I * Cd * diffuse * Kd;
 
   float t1 = transmitMax * ( 1. - pow( 1. - n.z, thinness ) );
-  vec3 r = reflect( v, n );
+  vec3 r = reflect( -v, n );
   float m = 2.0 * sqrt(  r.x*r.x + r.y*r.y + ( r.z+1.0 )*( r.z+1.0 )  );
   vec4 env = texture2D( texture, vec2( r.x / m + 0.5, r.y / m + 0.5 ) );
   float extinction = 5.;
