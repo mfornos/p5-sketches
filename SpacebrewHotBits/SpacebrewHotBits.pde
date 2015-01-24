@@ -17,12 +17,12 @@
  */
 import spacebrew.*;
 
-int bufferLen = 128;
+int bufferLen   = 128;
 int passwordLen = 8;
 int publishRate = 30; // seconds
 
-String server="sandbox.spacebrew.cc",
-       name="P5 Hot Bits",
+String server = "sandbox.spacebrew.cc",
+       name   = "P5 Hot Bits",
        description ="Publishes hot bits periodically and random passwords on demand.";
 
 Spacebrew sb;
